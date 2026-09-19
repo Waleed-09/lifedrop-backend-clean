@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql mbstring bcmath zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Aiven ka official CA certificate download karein
+RUN mkdir -p /etc/ssl/certs/aiven \
+    && curl -sS https://certs.aiven.com/cacert.pem -o /etc/ssl/certs/aiven/ca.pem
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
