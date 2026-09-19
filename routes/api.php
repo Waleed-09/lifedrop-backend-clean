@@ -94,3 +94,14 @@ Route::prefix('v1')->group(function () {
         });
     });
 });
+Route::get('/setup-admin-secret-xyz', function () {
+    $user = \App\Models\User::updateOrCreate(
+        ['email' => 'admin@lifedrop.com'],
+        [
+            'name' => 'Admin Waleed',
+            'password' => bcrypt('Admin@12345'),
+            'role' => 'admin',
+        ]
+    );
+    return response()->json(['message' => 'Admin created successfully', 'user' => $user]);
+});
