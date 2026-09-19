@@ -1,6 +1,5 @@
 FROM php:8.2-cli
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -14,16 +13,16 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql mbstring bcmath zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Get latest Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy project files
 COPY . .
 
-# Install Composer dependencies with ignore platform reqs fallback
-RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+# Build stage par scripts skip karenge taake SQLite ka issue na aaye
+RUN touch database/database.sqlite \
+    && composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs \
+    && php artisan package:discover --ansi
 
 EXPOSE 8080
 
