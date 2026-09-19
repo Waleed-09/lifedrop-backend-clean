@@ -59,9 +59,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-         'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', '/etc/ssl/certs/aiven/ca.pem'),
-            ]) : [],
+        'options' => extension_loaded('pdo_mysql') ? [
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', '/etc/ssl/certs/aiven/ca.pem'),
+                1014 => false, // 1014 = MYSQL_ATTR_SSL_VERIFY_SERVER_CERT integer value
+            ] : [],
         ],
 
         'mariadb' => [
