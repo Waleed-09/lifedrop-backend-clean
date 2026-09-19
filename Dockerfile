@@ -19,7 +19,6 @@ WORKDIR /var/www
 
 COPY . .
 
-# Build stage par scripts skip karenge taake SQLite ka issue na aaye
 RUN touch database/database.sqlite \
     && composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs \
     && php artisan package:discover --ansi
