@@ -1,23 +1,29 @@
 FROM php:8.2-cli
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     zip \
     unzip \
     ca-certificates \
-    && docker-php-ext-install pdo_mysql mbstring
+    && docker-php-ext-install pdo pdo_mysql mbstring bcmath zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Get latest Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
+# Copy project files
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install Composer dependencies with ignore platform reqs fallback
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 EXPOSE 8080
 
