@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BloodRequestController;
@@ -104,4 +104,8 @@ Route::get('/setup-admin-secret-xyz', function () {
         ]
     );
     return response()->json(['message' => 'Admin created successfully', 'user' => $user]);
+});
+Route::get('/health', function () {
+    DB::connection()->getPdo();
+    return response()->json(['status' => 'alive', 'database' => 'connected'], 200);
 });
