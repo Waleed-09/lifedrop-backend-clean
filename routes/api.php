@@ -114,3 +114,12 @@ Route::get('/health', function () {
     DB::connection()->getPdo();
     return response()->json(['status' => 'alive', 'database' => 'connected'], 200);
 });
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/run-migration-secret', function () {
+    Artisan::call('migrate --force');
+    return response()->json([
+        'message' => 'Migrations executed successfully!',
+        'output' => Artisan::output()
+    ]);
+});
