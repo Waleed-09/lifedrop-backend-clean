@@ -58,6 +58,7 @@ class BloodRequestController extends Controller
     {
         $donor = $request->user();
         abort_unless($donor->role === 'donor', 403, 'Only donors can accept requests.');
+        abort_unless($donor->is_eligible, 422, "Donor is currently in a 90-day recovery cooldown period ({$donor->days_until_eligible} days remaining).");
 
         $bloodRequest->matchedDonors()->syncWithoutDetaching([
             $donor->id => ['status' => 'accepted', 'responded_at' => now()],

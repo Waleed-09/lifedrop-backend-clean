@@ -27,6 +27,7 @@ class DonationController extends Controller
         ]);
 
         $donor = $request->user();
+        abort_unless($donor->is_eligible, 422, "Donor is currently in a 90-day recovery cooldown period ({$donor->days_until_eligible} days remaining).");
 
         $donation = DB::transaction(function () use ($data, $donor) {
             $donation = Donation::create([
@@ -36,7 +37,10 @@ class DonationController extends Controller
             ]);
 
             $donor->increment('donation_count');
-            $donor->update(['last_donation_date' => $data['date']]);
+            $donor->update([
+                'last_donation_date' => $data['date'],
+                'last_donated_at' => $data['date'],
+            ]);
 
             if (! empty($data['blood_bank_id'])) {
                 Inventory::where('blood_bank_id', $data['blood_bank_id'])

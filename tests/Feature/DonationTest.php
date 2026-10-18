@@ -56,5 +56,27 @@ class DonationTest extends TestCase
             'id' => $donor->id,
             'donation_count' => 1,
         ]);
+
+        $donor->refresh();
+        $this->assertNotNull($donor->last_donated_at);
+        $this->assertFalse($donor->is_eligible);
+    }
+
+    public function test_cooling_down_donor_cannot_record_new_donation(): void
+    {
+        $donor = User::factory()->create([
+            'role' => 'donor',
+            'last_donated_at' => now()->subDays(30), // In 90-day cooldown
+        ]);
+        $token = $donor->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/donations', [
+                'units' => 1,
+                'date' => now()->toDateString(),
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => "Donor is currently in a 90-day recovery cooldown period ({$donor->days_until_eligible} days remaining)."]);
     }
 }

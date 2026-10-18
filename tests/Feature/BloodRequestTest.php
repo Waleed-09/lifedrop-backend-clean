@@ -102,4 +102,32 @@ class BloodRequestTest extends TestCase
             'status' => 'matched',
         ]);
     }
+
+    public function test_cooling_down_donor_cannot_accept_blood_request(): void
+    {
+        $requester = User::factory()->create();
+        $donor = User::factory()->create([
+            'role' => 'donor',
+            'last_donated_at' => now()->subDays(15), // In 90-day cooldown
+        ]);
+
+        $requestItem = BloodRequest::create([
+            'requester_id' => $requester->id,
+            'blood_group' => 'B+',
+            'units' => 1,
+            'hospital' => 'General Hospital',
+            'latitude' => 34.15,
+            'longitude' => 73.21,
+            'urgency' => 'normal',
+            'status' => 'open',
+        ]);
+
+        $token = $donor->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/v1/requests/{$requestItem->id}/accept");
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => "Donor is currently in a 90-day recovery cooldown period ({$donor->days_until_eligible} days remaining)."]);
+    }
 }

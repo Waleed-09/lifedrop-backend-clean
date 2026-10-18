@@ -150,6 +150,7 @@ class AdminUserController extends Controller
             'name' => ['sometimes', 'string', 'max:120'],
             'role' => ['sometimes', 'in:donor,recipient,bloodbank,admin'],
             'status' => ['sometimes', 'in:active,blocked,deactivated'],
+            'is_verified' => ['sometimes', 'boolean'],
         ]);
 
         $oldStatus = $user->status;
@@ -266,6 +267,40 @@ class AdminUserController extends Controller
             'last_page' => $paginated->lastPage(),
             'per_page' => $paginated->perPage(),
             'data' => $paginated->items(),
+        ]);
+    }
+
+    /**
+     * Update Donor Information or Verification Badge
+     */
+    public function updateDonor(Request $request, User $user)
+    {
+        abort_unless($user->role === 'donor', 400, 'Selected user is not a donor.');
+
+        $data = $request->validate([
+            'is_verified' => ['sometimes', 'boolean'],
+            'is_available' => ['sometimes', 'boolean'],
+            'status' => ['sometimes', 'in:active,blocked,deactivated'],
+            'blood_group' => ['sometimes', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'city' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+        ]);
+
+        $user->update($data);
+
+        if (array_key_exists('is_verified', $data)) {
+            AdminActivityLog::create([
+                'admin_id' => $request->user()?->id,
+                'admin_name' => $request->user()?->name ?? 'System Admin',
+                'action' => 'TOGGLE_DONOR_VERIFICATION',
+                'description' => "Donor #{$user->id} ({$user->name}) verification status updated to " . ($user->is_verified ? 'Verified' : 'Unverified'),
+                'ip_address' => $request->ip(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Donor updated successfully',
+            'data' => $user->fresh(),
         ]);
     }
 

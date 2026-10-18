@@ -18,7 +18,11 @@ Route::prefix('v1')->group(function () {
     // Publicly view blood requests & search donors so anyone can see emergency needs
     Route::get('/requests', [BloodRequestController::class, 'index']);
     Route::get('/requests/{request_}', [BloodRequestController::class, 'show']);
+    Route::get('/donors/locations', [DonorController::class, 'locations']);
+    Route::get('/donors', [DonorController::class, 'index']);
+    Route::get('/donors/search', [DonorController::class, 'index']);
     Route::get('/donors/nearby', [DonorController::class, 'nearby']);
+    Route::post('/donors/{id}/mark-donated', [DonorController::class, 'markDonated']);
 
     // Public Live Platform Statistics
     Route::get('/stats', function () {
@@ -80,6 +84,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:admin')->prefix('admin')->group(function () {
             Route::get('/overview', [AdminUserController::class, 'overview']);
             Route::get('/donors', [AdminUserController::class, 'getDonors']);
+            Route::patch('/donors/{user}', [AdminUserController::class, 'updateDonor']);
             Route::delete('/donors/{user}', [AdminUserController::class, 'destroy']);
             Route::get('/users', [AdminUserController::class, 'index']);
             Route::get('/users/{user}', [AdminUserController::class, 'show']);

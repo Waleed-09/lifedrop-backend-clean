@@ -14,18 +14,24 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'role', 'blood_group',
-        'latitude', 'longitude', 'address', 'availability',
-        'last_donation_date', 'donation_count', 'status',
+        'latitude', 'longitude', 'address', 'city', 'district',
+        'availability', 'is_available', 'is_verified',
+        'last_donation_date', 'last_donated_at', 'donation_count', 'status',
     ];
 
     protected $hidden = ['password', 'remember_token'];
+
+    protected $appends = ['is_eligible', 'days_until_eligible'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'last_donation_date' => 'date',
+            'last_donated_at' => 'datetime',
             'availability' => 'boolean',
+            'is_available' => 'boolean',
+            'is_verified' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -63,15 +69,54 @@ class User extends Authenticatable
 
     public function scopeAvailable($query)
     {
-        return $query->where('availability', true);
+        return $query->where(function ($q) {
+            $q->where('availability', true)
+              ->orWhere('is_available', true);
+        });
     }
 
     public function scopeEligible($query)
     {
-        return $query->where(function ($q) {
-            $q->whereNull('last_donation_date')
-              ->orWhere('last_donation_date', '<=', now()->subWeeks(12));
+        $ninetyDaysAgo = now()->subDays(90);
+
+        return $query->where(function ($q) use ($ninetyDaysAgo) {
+            $q->where(function ($sub) {
+                $sub->whereNull('last_donated_at')
+                    ->whereNull('last_donation_date');
+            })->orWhere(function ($sub) use ($ninetyDaysAgo) {
+                $sub->whereNotNull('last_donated_at')
+                    ->where('last_donated_at', '<=', $ninetyDaysAgo);
+            })->orWhere(function ($sub) use ($ninetyDaysAgo) {
+                $sub->whereNull('last_donated_at')
+                    ->whereNotNull('last_donation_date')
+                    ->where('last_donation_date', '<=', $ninetyDaysAgo);
+            });
         });
+    }
+
+    public function getIsEligibleAttribute(): bool
+    {
+        $date = $this->last_donated_at ?? $this->last_donation_date;
+        if (! $date) {
+            return true;
+        }
+
+        return \Carbon\Carbon::parse($date)->addDays(90)->isPast();
+    }
+
+    public function getDaysUntilEligibleAttribute(): int
+    {
+        $date = $this->last_donated_at ?? $this->last_donation_date;
+        if (! $date) {
+            return 0;
+        }
+
+        $nextEligible = \Carbon\Carbon::parse($date)->addDays(90);
+        if ($nextEligible->isPast()) {
+            return 0;
+        }
+
+        return (int) ceil(now()->diffInSeconds($nextEligible, false) / 86400);
     }
 
     // blood-group compatibility: which donor groups can give to $recipientGroup
